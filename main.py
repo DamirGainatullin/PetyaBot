@@ -80,75 +80,80 @@ def geocoder1(update, context, adres):
         "format": "json",
         "geocode": adres
     })
-    if response.json()["response"]["GeoObjectCollection"]["featureMember"] == []:
-        update.message.reply_text('Не удается распознать адрес')
-    else:
-        toponym = response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
-        toponym_coodrinates = toponym["Point"]["pos"]
-
-        # Долгота и широта:
-        toponym_longitude, toponym_lattitude = toponym_coodrinates.split(" ")
-
-        delta = "0.005"
-
-        ll = ",".join([toponym_longitude, toponym_lattitude])
-        spn = ",".join([delta, delta])
-
-        static_api_request = f"http://static-maps.yandex.ru/1.x/?ll={ll}&spn={spn}&l=map"
-
-        context.bot.send_photo(
-            update.message.chat_id,  # Идентификатор чата. Куда посылать картинку.
-            # Ссылка на static API, по сути, ссылка на картинку.
-            # Телеграму можно передать прямо её, не скачивая предварительно карту.
-            static_api_request,
-        )
-        # update.message.reply_text("Показать организации находящиеся в этом здании?")
-
-        search_api_server = "https://search-maps.yandex.ru/v1/"
-        api_key = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
-
-        toponym = response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
-        toponym_coodrinates = toponym["Point"]["pos"]
-        toponym_longitude, toponym_lattitude = toponym_coodrinates.split(" ")
-        ll = ",".join([toponym_longitude, toponym_lattitude])
-
-        search_params = {
-            "apikey": api_key,
-            "text": adres,
-            "lang": "ru_RU",
-            "ll": ll,
-            "type": "biz"
-        }
-
-        response = requests.get(search_api_server, params=search_params)
-
-        json_response = response.json()
-        if "features" in json_response:
-            organization = json_response["features"]
-            reply_keyboard_org = []
-            org_info = {}
-            for i in organization:
-                # Название организации.
-                org_name = i["properties"]["CompanyMetaData"]["name"]
-                if "Hours" in i["properties"]["CompanyMetaData"]:
-                    org_hours = i["properties"]["CompanyMetaData"]["Hours"]["text"]
-                else:
-                    org_hours = 'не указано'
-                if "Phones" in i["properties"]["CompanyMetaData"]:
-                    org_phones = i["properties"]["CompanyMetaData"]["Phones"][0]["formatted"]
-                else:
-                    org_phones = 'не указано'
-                if "url" in i["properties"]["CompanyMetaData"]:
-                    org_site = i["properties"]["CompanyMetaData"]["url"]
-                else:
-                    org_site = 'не указано'
-                reply_keyboard_org.append([org_name])
-                org_info[org_name] = [org_hours, org_phones, org_site]
-            reply_keyboard_org.append(['Выйти'])
-            markup = ReplyKeyboardMarkup(reply_keyboard_org, one_time_keyboard=True)
-            update.message.reply_text(f'В данном здании находится {len(organization)} организаций', reply_markup=markup)
+    if "statusCode" not in response.json():
+        if response.json()["response"]["GeoObjectCollection"]["featureMember"] == []:
+            update.message.reply_text('Не удается распознать адрес')
         else:
-            update.message.reply_text('В данном здании нет ни одной организации')
+            toponym = response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
+            toponym_coodrinates = toponym["Point"]["pos"]
+
+            # Долгота и широта:
+            toponym_longitude, toponym_lattitude = toponym_coodrinates.split(" ")
+
+            delta = "0.005"
+
+            ll = ",".join([toponym_longitude, toponym_lattitude])
+            spn = ",".join([delta, delta])
+
+            static_api_request = f"http://static-maps.yandex.ru/1.x/?ll={ll}&spn={spn}&l=map"
+
+            context.bot.send_photo(
+                update.message.chat_id,  # Идентификатор чата. Куда посылать картинку.
+                # Ссылка на static API, по сути, ссылка на картинку.
+                # Телеграму можно передать прямо её, не скачивая предварительно карту.
+                static_api_request,
+            )
+            # update.message.reply_text("Показать организации находящиеся в этом здании?")
+
+            search_api_server = "https://search-maps.yandex.ru/v1/"
+            api_key = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
+
+            toponym = response.json()["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
+            toponym_coodrinates = toponym["Point"]["pos"]
+            toponym_longitude, toponym_lattitude = toponym_coodrinates.split(" ")
+            ll = ",".join([toponym_longitude, toponym_lattitude])
+
+            search_params = {
+                "apikey": api_key,
+                "text": adres,
+                "lang": "ru_RU",
+                "ll": ll,
+                "type": "biz"
+            }
+
+            response = requests.get(search_api_server, params=search_params)
+
+            json_response = response.json()
+            if "features" in json_response:
+                organization = json_response["features"]
+                reply_keyboard_org = []
+                org_info = {}
+                for i in organization:
+                    # Название организации.
+                    org_name = i["properties"]["CompanyMetaData"]["name"]
+                    if "Hours" in i["properties"]["CompanyMetaData"]:
+                        org_hours = i["properties"]["CompanyMetaData"]["Hours"]["text"]
+                    else:
+                        org_hours = 'не указано'
+                    if "Phones" in i["properties"]["CompanyMetaData"]:
+                        org_phones = i["properties"]["CompanyMetaData"]["Phones"][0]["formatted"]
+                    else:
+                        org_phones = 'не указано'
+                    if "url" in i["properties"]["CompanyMetaData"]:
+                        org_site = i["properties"]["CompanyMetaData"]["url"]
+                    else:
+                        org_site = 'не указано'
+                    reply_keyboard_org.append([org_name])
+                    org_info[org_name] = [org_hours, org_phones, org_site]
+                reply_keyboard_org.append(['Выйти'])
+                markup = ReplyKeyboardMarkup(reply_keyboard_org, one_time_keyboard=True)
+                update.message.reply_text(f'В данном здании находится {len(organization)} организаций',
+                                          reply_markup=markup)
+            else:
+                update.message.reply_text('В данном здании нет ни одной организации')
+    else:
+        update.message.reply_text('В данном здании нет ни одной организации')
+
 
 def location(update, context):
     update.message.reply_text("Чтобы получить информацию о запрашиваемом месте напишите 'Покажи', затем введите адрес")
@@ -156,7 +161,7 @@ def location(update, context):
 
 def search(update, context):
     update.message.reply_text(
-        "Чтобы получить информацию о организациях находящихся радом с вами напишите 'Рядом с', затем введите адрес и тип нужной вам организации")
+        "Чтобы получить информацию о организациях находящихся рядом с вами напишите 'Рядом с', затем введите адрес и тип нужной вам организации")
 
 
 def geocoder2(update, context, adres, org_type):
@@ -169,30 +174,33 @@ def geocoder2(update, context, adres, org_type):
     search_api_server = "https://search-maps.yandex.ru/v1/"
     api_key = "dda3ddba-c9ea-4ead-9010-f43fbc15c6e3"
     response_json = response.json()
-    if response_json["response"]["GeoObjectCollection"]["featureMember"] == []:
-        return ('', '')
+    if "statusCode" not in response_json:
+        if response_json["response"]["GeoObjectCollection"]["featureMember"] == []:
+            return ('', '')
+        else:
+            toponym = response_json["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
+            toponym_coodrinates = toponym["Point"]["pos"]
+            toponym_longitude, toponym_lattitude = toponym_coodrinates.split(" ")
+            ll = ",".join([toponym_longitude, toponym_lattitude])
+
+            search_params = {
+                "apikey": api_key,
+                "text": org_type,
+                "lang": "ru_RU",
+                "ll": ll,
+                "type": "biz"
+            }
+
+            response = requests.get(search_api_server, params=search_params)
+            json_response = response.json()
+            organization = json_response["features"][0]
+            # Название организации.
+            org_name = organization["properties"]["CompanyMetaData"]["name"]
+            # Адрес организации.
+            org_address = organization["properties"]["CompanyMetaData"]["address"]
+            return (org_name, org_address)
     else:
-        toponym = response_json["response"]["GeoObjectCollection"]["featureMember"][0]["GeoObject"]
-        toponym_coodrinates = toponym["Point"]["pos"]
-        toponym_longitude, toponym_lattitude = toponym_coodrinates.split(" ")
-        ll = ",".join([toponym_longitude, toponym_lattitude])
-
-        search_params = {
-            "apikey": api_key,
-            "text": org_type,
-            "lang": "ru_RU",
-            "ll": ll,
-            "type": "biz"
-        }
-
-        response = requests.get(search_api_server, params=search_params)
-        json_response = response.json()
-        organization = json_response["features"][0]
-        # Название организации.
-        org_name = organization["properties"]["CompanyMetaData"]["name"]
-        # Адрес организации.
-        org_address = organization["properties"]["CompanyMetaData"]["address"]
-        return (org_name, org_address)
+        return ('', '')
 
 
 def main():
